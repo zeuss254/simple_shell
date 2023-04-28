@@ -1,31 +1,61 @@
 #include "builtins.h"
+#include "general.h"
 
 /**
- * __exit - exits from shell
- * @info: arguments passed
- * Return: int
+ * bin_exit - Implementation of the exit builtin
+ * Description: Free all the memory used and
+ * exit with the last status_code
+ *
+ * @info: Information about the shell
+ * @arguments: Arguments received
  */
-int __exit(info_t *info)
+void bin_exit(general_t *info, char **arguments)
 {
-	char **args = info->tokens + 1;
+	int status_code, status;
 
-	if (*args)
+	status = _TRUE;
+	if (arguments[1] != NULL)
+		status = number_controller(info, arguments[1]);
+
+	if (status == _FALSE)
+		return;
+
+	status_code = info->status_code;
+
+	free_memory_pp((void **) arguments);
+	free_memory_p((void *) info->buffer);
+	free_memory_p((void *) info->environment);
+	free_memory_p((void *) info);
+
+	exit(status_code);
+}
+
+/**
+ * number_controller - Control the argument of exit
+ *
+ * @info: General information about the shell
+ * @number: Argument of the builtin
+ *
+ * Return: If the actual argument is valid, return _TRUE
+ * if not, return _FALSE
+ */
+int number_controller(general_t *info, char *number)
+{
+	int _number;
+
+	_number = _atoi(number);
+
+	if (_number < 0 || contains_letter(number))
 	{
-		if (_isnumber(*args) && atou(*args) <= INT_MAX)
-		{
-			info->status = atou(*args);
-		}
-		else
-		{
-			perrorl_default(*info->argv, info->lineno, *args,
-					*info->tokens, "Illegal number", NULL);
-			info->status = 2;
-
-			return (info->status);
-		}
+		info->status_code = 2;
+		info->error_code = _CODE_ILLEGAL_NUMBER;
+		error_extra(info, number);
+		return (_FALSE);
 	}
-	if (info->file)
-		close(info->fileno);
 
-	exit(free_info(info));
+	if (_number > 255)
+		info->status_code = _number % 256;
+	else
+		info->status_code = _number;
+	return (_TRUE);
 }

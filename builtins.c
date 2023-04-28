@@ -1,39 +1,50 @@
 #include "builtins.h"
 
 /**
- * get_builtins - get the builtins
- * Return: pointer to a NULL-terminated statically-allocated array of builtins
+ * builtins - Check and execute the builtins
+ * @info: Information about the shell
+ * @arguments: Commands and arguments
+ * Return: If the command passed is a builtins
+ * return _TRUE if not return _FALSE
  */
-const builtin_t *get_builtins(void)
+int builtins(general_t *info, char **arguments)
 {
-	static builtin_t builtins[] = {
-		{"alias", __alias, ALIAS_HELP, ALIAS_DESC},
-		{"cd", __cd, CD_HELP, CD_DESC},
-		{"env", __env, ENV_HELP, ENV_DESC},
-		{"exec", __exec, EXEC_HELP, EXEC_DESC},
-		{"exit", __exit, EXIT_HELP, EXIT_DESC},
-		{"help", __help, HELP_HELP, HELP_DESC},
-		{"setenv", __setenv, SETENV_HELP, SETENV_DESC},
-		{"unsetenv", __unsetenv, UNSETENV_HELP, UNSETENV_DESC},
-		{0}
-	};
+	int status;
 
-	return (builtins);
+	status = check_builtin(info, arguments);
+	if (status == _FALSE)
+		return (_FALSE);
+
+	return (_TRUE);
 }
 
 /**
- * get_builtin - get a builtin by name
- * @name: the name of the builtin to retrieve
- * Return: NULL if no match is found, otherwise a pointer to the builtin
+ * check_builtin - Check if the actual command is a builtin_t
+ * or not
+ *
+ * @info: General information about the shell
+ * @arguments: Arguments of the command
+ *
+ * Return: If the command is an actual builtin, return _TRUE
+ * if not _FALSE
  */
-const builtin_t *get_builtin(const char *name)
+int check_builtin(general_t *info, char **arguments)
 {
-	const builtin_t *builtin = NULL;
+	int i, size;
+	builtin_t builtins[] = {
+		{"exit", bin_exit},
+		{"env", bin_env}
+	};
 
-	for (builtin = get_builtins(); builtin->name; builtin += 1)
+	size = sizeof(builtins) / sizeof(builtins[0]);
+	for (i = 0; i < size; i++)
 	{
-		if (_strcmp(name, builtin->name) == 0)
-			return (builtin);
+		if (_strcmp(info->command, builtins[i].command) == 0)
+		{
+			builtins[i].func(info, arguments);
+			return (_TRUE);
+		}
 	}
-	return (NULL);
+
+	return (_FALSE);
 }
